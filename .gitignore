@@ -7,6 +7,7 @@
 *.obj
 *.elf
 
+
 # Linker output
 *.ilk
 *.map
@@ -49,7 +50,12 @@
 modules.order
 Module.symvers
 Mkfile.old
-dkms.conf
 
+obj/
+vdisk/
+*.efi
+OVMF.fd
+dkms.conf
+esp/
 # debug information files
 *.dwo
