@@ -1,0 +1,9 @@
+disk.img
+OVMF.fd
+xorn.efi
+xorn.ld
+obj/
+esp/
+vdisk/
+disk_mount/
+.vscode/
