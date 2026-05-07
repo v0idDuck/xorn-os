@@ -5,6 +5,7 @@ XeSetting xes;
 
 RDATA titleo[] = "XORN OS V0.2.0 by VoidDuck";
 RDATA title[] = "XORN SHELL V0.2.0";
+RDATA thelp[] = "type help for list of commands";
 RDATA unk[] = "Unknown command";
 RDATA slash[] = "/";
 static void draw_prompt();
@@ -17,6 +18,9 @@ RDATA s_help[] = "help";
 RDATA s_reboot[] = "reboot";
 RDATA s_cd[] = "cd";
 RDATA s_ls[] = "ls";
+RDATA s_fontsize[] = "fontsize";
+RDATA s_mem[] = "mem";
+RDATA s_run[] = "run";
 
 ENTRY entry(unsigned long long dummy, XornAPI* api) {
     xorn_init(api);
@@ -29,7 +33,8 @@ ENTRY entry(unsigned long long dummy, XornAPI* api) {
     
     xprintln(xes, titleo, 0xFFFFFF);
     xprintln(xes, title, 0xFFFFFF);
-
+    xprintln(xes, thelp, 0x888888);
+    xprintln(xes, titleo, 0x000000);
     while (1) {
         draw_prompt(cwd);
         char buf[256];
@@ -57,7 +62,7 @@ ENTRY entry(unsigned long long dummy, XornAPI* api) {
         xes.cx = 40;
         xes.cy += 9 * xes.Fontsize;
         parse_and_exec(cwd, buf);
-        
+        xes.cx = 5;
     }
     
 }
@@ -162,6 +167,66 @@ static void cmd_ls(const char* path) {
 }
     xes.cx = 5;
 }
+
+void cmd_fontsize(const char* arg) {
+    if (arg[0] == 0) {
+        RDATA usage[] = "  usage: fontsize <1-5>";
+        xprintln(xes, usage, 0x888888);
+        return;
+    }
+    int size = arg[0] - '0';
+    if (size < 1 || size > 5) {
+        RDATA err[] = "  error: size must be 1-5";
+        xprintln(xes, err, 0xFF3333);
+        return;
+    }
+    xes.Fontsize = size;
+    cmd_clear();
+    RDATA fsch[] = "fontsize changed!";
+    xprintln(xes, fsch, COLOR_GREEN);
+}
+void cmd_mem() {
+    uint32 used = _api->mem_used();
+    uint32 total = _api->mem_total();
+    uint32 used_kb = used / 1024;
+    uint32 total_kb = total / 1024;
+    
+    char buf[16];
+    RDATA heap[] = "  heap: ";
+    RDATA sep[] = " / ";
+    RDATA kb[] = " KB";
+    
+    xprint(xes, heap, 0x888888);
+    _int_to_str(used_kb, buf);
+    xprint(xes, buf, 0xFFFFFF);
+    xprint(xes, sep, 0x888888);
+    _int_to_str(total_kb, buf);
+    xprint(xes, buf, 0xFFFFFF);
+    xprintln(xes, kb, 0x888888);
+}
+static void cmd_run(char* cwd, const char* arg) {
+    RDATA err_nf[] = "  error: file not found";
+    RDATA err_bm[] = "  error: not a .xe file";
+    RDATA err_nm[] = "  error: out of memory";
+    
+    char path[256];
+    
+    if (arg[0] == '/') {
+        _str_copy(path, arg);
+    } else {
+        _str_copy(path, cwd);
+        if (path[_str_len(path) - 1] != '/')
+            path[_str_len(path)] = '/';
+        _str_copy(path + _str_len(path), arg);
+    }
+    
+    int result = _api->run(path);
+
+    if      (result == 1) xprintln(xes, err_nf, 0xFF3333);
+    else if (result == 2) xprintln(xes, err_bm, 0xFF3333);
+    else if (result == 3) xprintln(xes, err_nm, 0xFF3333);
+}
+
 void parse_and_exec(char* cwd, const char* line) {
     char cmd[64];
     char arg[192];
@@ -190,5 +255,8 @@ void parse_and_exec(char* cwd, const char* line) {
             cmd_ls(cwd);
         }
     }
+    else if (_str_eq(cmd, s_fontsize)) cmd_fontsize(arg);
+    else if (_str_eq(cmd, s_mem)) cmd_mem();
+    else if (_str_eq(cmd, s_run)) cmd_run(cwd, arg);
     else xprintln(xes, unk, 0xFF0000);
 }

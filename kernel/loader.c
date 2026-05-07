@@ -28,6 +28,11 @@ static int __attribute__((sysv_abi)) _xe_ls(const char* path, void* entries, int
     if (!path) return 0;
     return fat32_ls(path, (FatEntry*)entries, max);
 }
+static uint32_t __attribute__((sysv_abi)) _xe_mem_used(void) { return memory_used(); }
+static uint32_t __attribute__((sysv_abi)) _xe_mem_total(void) { return 1024 * 1024; }
+static int __attribute__((sysv_abi)) _xe_run(const char* path) {
+    return loader_run(path, 0);
+}
 
 int loader_run(const char* path, void* api) {
     
@@ -44,6 +49,9 @@ int loader_run(const char* path, void* api) {
     api_struct.exit         = NULL;
     api_struct.reboot = _xe_reboot;
     api_struct.ls = _xe_ls;
+    api_struct.mem_used  = _xe_mem_used;
+    api_struct.mem_total = _xe_mem_total;
+    api_struct.run = _xe_run;
     
     unsigned char* file_buf  = 0;
     unsigned int   file_size = 0;

@@ -46,6 +46,8 @@ typedef struct {
     // память
     void* (*alloc)(uint32 size);
     void  (*free)(void* ptr);
+    uint32 (*mem_used)(void);
+    uint32 (*mem_total)(void);
 
     // система
     void (*sleep)(uint32 ms);
@@ -55,6 +57,9 @@ typedef struct {
     // fat32
     int (*ls)(const char* path, void* entries, int max);
 
+
+    // прилоджения
+    int (*run)(const char* path);
 } XornAPI;
 
 // ─── Глобальное состояние SDK ────────────────────────────
