@@ -42,6 +42,7 @@ typedef struct {
     // ввод
     char (*read_key)(void);
     int  (*key_pressed)(void);
+    char (*blink_read)(int x, int y);
 
     // память
     void* (*alloc)(uint32 size);
@@ -151,6 +152,7 @@ typedef struct {
 // ─── Ввод ────────────────────────────────────────────────
 #define xread_key()      _api->read_key()
 #define xkey_pressed()   _api->key_pressed()
+#define xblink_read(x, y) _api->blink_read(x, y)
 
 // ─── Память ──────────────────────────────────────────────
 #define xalloc(size)    _api->alloc(size)

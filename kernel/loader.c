@@ -33,6 +33,9 @@ static uint32_t __attribute__((sysv_abi)) _xe_mem_total(void) { return 1024 * 10
 static int __attribute__((sysv_abi)) _xe_run(const char* path) {
     return loader_run(path, 0);
 }
+static char __attribute__((sysv_abi)) _xe_blink_read(int x, int y) {
+    return blink_read(gSys, x, y);
+}
 
 int loader_run(const char* path, void* api) {
     
@@ -52,6 +55,7 @@ int loader_run(const char* path, void* api) {
     api_struct.mem_used  = _xe_mem_used;
     api_struct.mem_total = _xe_mem_total;
     api_struct.run = _xe_run;
+    api_struct.blink_read = _xe_blink_read;
     
     unsigned char* file_buf  = 0;
     unsigned int   file_size = 0;

@@ -18,7 +18,8 @@ if ($LASTEXITCODE -ne 0) {
     C:\msys64\mingw64\bin\mformat.exe -i "${imgPath}@@0" -F -v XORN ::
 }
 
-
+mformat -i disk.img -F -v "XORNOS" ::
+& "$mtools\mlabel.exe" -i "$imgPath" "::XORNOS"
 # проверяем содержимое bin
 echo "Contents of bin:"
 C:\msys64\mingw64\bin\mdir.exe -i $imgPath ::/bin

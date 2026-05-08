@@ -6,8 +6,8 @@ XeSetting xes;
 RDATA titleo[] = "XORN OS V0.2.0 by VoidDuck";
 RDATA title[] = "XORN SHELL V0.2.0";
 RDATA thelp[] = "type help for list of commands";
-RDATA unk[] = "Unknown command";
 RDATA slash[] = "/";
+RDATA temprem[] = "temporarily removed due to bugs";
 static void draw_prompt();
 void parse_and_exec(char* cwd, const char* line);
 
@@ -40,7 +40,7 @@ ENTRY entry(unsigned long long dummy, XornAPI* api) {
         char buf[256];
         int len = 0;
         while (1) {
-            char c = xread_key();
+            char c = xblink_read(xes.cx, xes.cy);
             if (c == '\r') break;
             if (c == KEY_BACKSPACE && len > 0) {
                 len--;
@@ -257,6 +257,20 @@ void parse_and_exec(char* cwd, const char* line) {
     }
     else if (_str_eq(cmd, s_fontsize)) cmd_fontsize(arg);
     else if (_str_eq(cmd, s_mem)) cmd_mem();
-    else if (_str_eq(cmd, s_run)) cmd_run(cwd, arg);
-    else xprintln(xes, unk, 0xFF0000);
+    else if (_str_eq(cmd, s_run)) xprintln(xes, temprem, 0xFFFFFF); // cmd_run(cwd, arg);
+    else {
+        // path(/bin/)
+        char path[128];
+        RDATA bin[] = "/bin/";
+        RDATA xe[] = ".xe";
+        _str_copy(path, bin);
+        _str_copy(path + _str_len(path), cmd);
+        _str_copy(path + _str_len(path), xe);
+    
+        int result = _api->run(path);
+        if (result == 1) {
+            RDATA unk[] = "  unknown command";
+            xprintln(xes, unk, 0xFF3333);
+        }
+    }
 }

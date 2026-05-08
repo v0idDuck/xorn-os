@@ -4,7 +4,7 @@ $mtools  = "C:\msys64\mingw64\bin"
 
 # пересоздаём образ
 & "$mtools\mformat.exe" -i "$imgPath" -F -T 65536 ::
-
+& "$mtools\mlabel.exe" -i "$imgPath" "::XORNOS"
 # копируем всё рекурсивно одной командой
 Get-ChildItem -Directory $srcPath | ForEach-Object {
     Write-Host "copy $($_.Name)"

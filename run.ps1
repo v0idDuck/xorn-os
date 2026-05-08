@@ -1,4 +1,14 @@
 # Создаём папки если нет
+# читаем текущий билд
+$buildFile = "build"
+$build = 0
+if (Test-Path $buildFile) {
+    $build = [int](Get-Content $buildFile)
+}
+$build++
+Set-Content $buildFile $build
+echo "Build #$build"
+
 if (!(Test-Path "obj")) { New-Item -ItemType Directory -Force -Path "obj" }
 if (!(Test-Path "esp\EFI\BOOT")) { New-Item -ItemType Directory -Force -Path "esp\EFI\BOOT" }
 

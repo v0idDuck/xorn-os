@@ -12,60 +12,44 @@ void disk_init(EFI_SYSTEM_TABLE* sys) {
         ByProtocol, &bio_guid, 0, &handle_count, &handles
     );
 
-    // ← дебаг — выводим все устройства
     for (UINTN i = 0; i < handle_count; i++) {
         EFI_BLOCK_IO* bio = 0;
         sys->BootServices->HandleProtocol(
             handles[i], &bio_guid, (void**)&bio
         );
+
         if (!bio || !bio->Media) continue;
-
-        char buf[32];
-        display_print("dev: LastBlock=", COLOR_GRAY);
-        int_to_str((int)bio->Media->LastBlock, buf);
-        display_print(buf, COLOR_WHITE);
-        display_print(" Logical=", COLOR_GRAY);
-        int_to_str(bio->Media->LogicalPartition, buf);
-        display_println(buf, COLOR_WHITE);
-    }
-
-    for (UINTN i = 0; i < handle_count; i++) {
-        EFI_BLOCK_IO* bio = 0;
-        sys->BootServices->HandleProtocol(
-            handles[i], &bio_guid, (void**)&bio
-        );
-
         if (!bio->Media->MediaPresent) continue;
         if (bio->Media->LogicalPartition) continue;
         if (bio->Media->BlockSize != 512) continue;
-        if (bio->Media->LastBlock < 65536) continue;   // меньше 32MB — пропуск
-        if (bio->Media->LastBlock > 500000) continue;  // больше 256MB — пропуск (это esp)
-
-        // ← добавь: пропускаем маленькие диски (меньше 32MB)
         if (bio->Media->LastBlock < 65536) continue;
 
+        // читаем первый сектор
+        unsigned char buf[512] __attribute__((aligned(512)));
+        EFI_STATUS s = bio->ReadBlocks(bio, bio->Media->MediaId, 0, 512, buf);
+        if (s != EFI_SUCCESS) continue;
+
+        // проверяем FAT32 сигнатуру
+        // bytes 82-89 = "FAT32   "
+        if (buf[82] != 'F' || buf[83] != 'A' || buf[84] != 'T') continue;
+        // проверяем boot сигнатуру
+        if (buf[510] != 0x55 || buf[511] != 0xAA) continue;
+        // метка
+        if (buf[71] != 'X' || buf[72] != 'O' || buf[73] != 'R' ||
+    buf[74] != 'N' || buf[75] != 'O' || buf[76] != 'S') continue;
         block_io = bio;
         media_id = bio->Media->MediaId;
         break;
     }
 
-
     sys->BootServices->FreePool(handles);
 
-    
     if (block_io) {
-        char buf[32];
-        display_print("disk: found! MediaId=", COLOR_GREEN);
-        int_to_str(media_id, buf);
-        display_print(buf, COLOR_WHITE);
-        display_print(" LastBlock=", COLOR_GRAY);
-        int_to_str((int)block_io->Media->LastBlock, buf);
-        display_println(buf, COLOR_WHITE);
+        display_println("disk: found!", COLOR_GREEN);
     } else {
         display_println("disk: NOT found!", COLOR_RED);
     }
 }
-
 // статический выровненный буфер
 static unsigned char sector_buf[512] __attribute__((aligned(512)));
 
