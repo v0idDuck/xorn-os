@@ -54,7 +54,8 @@ typedef struct {
     void (*sleep)(uint32 ms);
     void (*exit)(void);
     void (*reboot)(void);
-
+    void (*halt)(void);
+    
     // fat32
     int (*ls)(const char* path, void* entries, int max);
 

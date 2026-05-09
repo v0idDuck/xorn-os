@@ -50,6 +50,12 @@ static int __attribute__((sysv_abi)) _xe_run(const char* path) {
 static char __attribute__((sysv_abi)) _xe_blink_read(int x, int y) {
     return blink_read(gSys, x, y);
 }
+static void __attribute__((sysv_abi)) _xe_halt(void) {
+    gSys->RuntimeServices->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+}
+static void __attribute__((sysv_abi)) _xe_exit(void) {
+    // просто возвращаемся из loader_run
+}
 
 int loader_run(const char* path, void* api) {
     
@@ -63,14 +69,15 @@ int loader_run(const char* path, void* api) {
     api_struct.alloc        = memory_alloc;
     api_struct.free         = memory_free;
     api_struct.sleep        = NULL;
-    api_struct.exit         = NULL;
+    api_struct.exit         = _xe_exit;
     api_struct.reboot = _xe_reboot;
     api_struct.ls = _xe_ls;
     api_struct.mem_used  = _xe_mem_used;
     api_struct.mem_total = _xe_mem_total;
     api_struct.run = _xe_run;
     api_struct.blink_read = _xe_blink_read;
-    
+    api_struct.halt = _xe_halt;
+
     unsigned char* file_buf  = 0;
     unsigned int   file_size = 0;
 
