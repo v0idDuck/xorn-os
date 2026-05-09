@@ -145,6 +145,19 @@ typedef struct {
         (xes).cx += _str_len(text) * 6 * (xes).Fontsize; \
     } while (0)
 
+
+#define rprint(xes, text, color) \
+    do { \
+        RDATA _rt[] = text; \
+        xprintln(xes, _rt, color); \
+    } while(0)
+
+#define rprintc(xes, text, color) \
+    do { \
+        RDATA _rt[] = text; \
+        xprint(xes, _rt, color); \
+    } while(0)
+
 #define set_scale(s)    _scale = (s)
 #define set_cursor(x,y) _cx = (x); _cy = (y)
 #define newline()       _cx = 40; _cy += 9 * _scale

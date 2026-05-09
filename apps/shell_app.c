@@ -257,7 +257,7 @@ void parse_and_exec(char* cwd, const char* line) {
     }
     else if (_str_eq(cmd, s_fontsize)) cmd_fontsize(arg);
     else if (_str_eq(cmd, s_mem)) cmd_mem();
-    else if (_str_eq(cmd, s_run)) xprintln(xes, temprem, 0xFFFFFF); // cmd_run(cwd, arg);
+    else if (_str_eq(cmd, s_run)) cmd_run(cwd, arg);
     else {
         // path(/bin/)
         char path[128];

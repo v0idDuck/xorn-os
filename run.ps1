@@ -6,8 +6,9 @@ if (Test-Path $buildFile) {
     $build = [int](Get-Content $buildFile)
 }
 $build++
+$buildHex = $build.ToString("X")
 Set-Content $buildFile $build
-echo "Build #$build"
+echo "Build #$buildHex"
 
 if (!(Test-Path "obj")) { New-Item -ItemType Directory -Force -Path "obj" }
 if (!(Test-Path "esp\EFI\BOOT")) { New-Item -ItemType Directory -Force -Path "esp\EFI\BOOT" }

@@ -125,15 +125,15 @@ EFI_STATUS efi_main(EFI_HANDLE handle, EFI_SYSTEM_TABLE* sys) {
         }
 
     }
-    char start_mode[64] = "--shell";
-    char debug_val[8]   = "0";
-    uefi_config_get(handle, sys, L"etc\\xorn\\boot.cfg", "start_setup", start_mode, sizeof(start_mode));
-    uefi_config_get(handle, sys, L"etc\\xorn\\boot.cfg", "debug",       debug_val,  sizeof(debug_val));
-    xorn_debug = str_eq(start_mode, "--debug");
-    xorn_debug = str_eq(debug_val, "1");
-    if (str_eq(start_mode, "--0")) {
-        goto nullmode;
-    }
+    // char start_mode[64] = "--shell";
+    // char debug_val[8]   = "0";
+    // uefi_config_get(handle, sys, L"etc\\xorn\\boot.cfg", "start_setup", start_mode, sizeof(start_mode));
+    // uefi_config_get(handle, sys, L"etc\\xorn\\boot.cfg", "debug",       debug_val,  sizeof(debug_val));
+    // xorn_debug = str_eq(start_mode, "--debug");
+    // xorn_debug = str_eq(debug_val, "1");
+    // if (str_eq(start_mode, "--0")) {
+    //     goto nullmode;
+    // }
     colorb(BL_WHITE);
     display_init(gop);
     keyboard_init(sys);

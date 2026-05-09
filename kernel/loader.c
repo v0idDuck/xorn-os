@@ -8,11 +8,25 @@
 #include "colors.h"
 
 #define XE_LOAD_ADDR 0x1000000
-
+#define MAX_DEPTH 4
+static void* load_bufs[MAX_DEPTH] = {0};
+static int load_depth = 0;
 static EFI_SYSTEM_TABLE* gSys;
 
 void loader_init(EFI_SYSTEM_TABLE* sys) {
     gSys = sys;
+    for (int i = 0; i < MAX_DEPTH; i++) {
+        EFI_PHYSICAL_ADDRESS addr = 0;
+        EFI_STATUS s = gSys->BootServices->AllocatePages(AllocateAnyPages, EfiLoaderCode, 128, &addr);
+        load_bufs[i] = (void*)addr;
+        char buf[32];
+        display_print("buf[", COLOR_GRAY);
+        int_to_str(i, buf);
+        display_print(buf, COLOR_WHITE);
+        display_print("]=", COLOR_GRAY);
+        int_to_str((int)addr, buf);
+        display_println(buf, COLOR_WHITE);
+    }
 }
 
 static char __attribute__((sysv_abi)) _xe_read_key(void) { return keyboard_read(); }
@@ -81,11 +95,13 @@ int loader_run(const char* path, void* api) {
     if (code_size == 0) return LOADER_ERR_BADMAGIC;
     
     
-    // загружаем по фиксированному адресу
-    unsigned char* code = (unsigned char*)XE_LOAD_ADDR;
+    if (load_depth >= MAX_DEPTH) return LOADER_ERR_NOMEM;
+unsigned char* code = (unsigned char*)load_bufs[load_depth];
+load_depth++;
     for (unsigned int i = 0; i < code_size; i++)
-        code[i] = file_buf[12 + i];
+    code[i] = file_buf[12 + i];
 
+    
     // передаём массив функций
     char dbuf[32];
     XDEBUG(display_print("display_clear addr=", COLOR_GRAY));
@@ -108,4 +124,5 @@ entry_fn(0, &api_struct);
 
     display_println("returned!", COLOR_GREEN);
     return LOADER_OK;
+    load_depth--;
 }
