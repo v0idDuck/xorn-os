@@ -70,3 +70,19 @@ void disk_read_sector(unsigned int lba, void* buf) {
     for (int i = 0; i < 512; i++)
         dst[i] = sector_buf[i];
 }
+ 
+void disk_write_sector(unsigned int lba, void* buf) {
+    if (!block_io) return;
+    
+    // копируем в выровненный буфер
+    for (int i = 0; i < 512; i++)
+        sector_buf[i] = ((unsigned char*)buf)[i];
+    
+    EFI_STATUS status = block_io->WriteBlocks(
+        block_io, media_id, lba, 512, sector_buf
+    );
+    
+    if (status != EFI_SUCCESS) {
+        display_println("disk_write: FAILED!", COLOR_RED);
+    }
+}

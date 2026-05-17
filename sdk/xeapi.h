@@ -58,17 +58,17 @@ typedef struct {
     
     // fat32
     int (*ls)(const char* path, void* entries, int max);
-
+    int (*write)(const char* path, void* buf, unsigned int size);
 
     // прилоджения
     int (*run)(const char* path);
 } XornAPI;
 
 // ─── Глобальное состояние SDK ────────────────────────────
-static XornAPI* _api  = 0;
-static int      _cx   = 40;
-static int      _cy   = 40;
-static int      _scale = 2;
+XornAPI* _api  = 0;
+int      _cx   = 40;
+int      _cy   = 40;
+int      _scale = 2;
 
 #define ENTRY __attribute__((ms_abi)) void
 #define sdk_ver "0.1.0"

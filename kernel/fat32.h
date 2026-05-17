@@ -10,3 +10,5 @@ typedef struct {
 } FatEntry;
 
 int fat32_ls(const char* path, FatEntry* entries, int max_count);
+
+int fat32_write(const char* path, unsigned char* buf, unsigned int size);

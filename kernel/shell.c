@@ -178,6 +178,14 @@ static void cmd_ls(const char* arg) {
         }
     }
 }
+
+static void cmd_test_write() {
+    unsigned char data[] = "Hello from FAT32 write!";
+    int result = fat32_write("/test.txt", data, 23);
+    if (result) println("write ok!", COLOR_GREEN);
+    else println("write failed!", COLOR_RED);
+}
+
 // ─── Парсер ──────────────────────────────────────────────
 
 static void parse_and_exec(char* line) {
@@ -209,6 +217,7 @@ static void parse_and_exec(char* line) {
     else if (str_eq(cmd, "mem"))     cmd_mem();
     else if (str_eq(cmd, "run")) cmd_run(arg);
     else if (str_eq(cmd, "ls")) cmd_ls(arg);
+    else if (str_eq(cmd, "test_write")) cmd_test_write();
     else {
 
         char path[128];

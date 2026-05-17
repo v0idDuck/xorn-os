@@ -270,3 +270,142 @@ int fat32_ls(const char* path, FatEntry* entries, int max_count) {
     }
     return count;
 }
+
+static void fat_write(unsigned int cluster, unsigned int value) {
+    unsigned char sector_buf[512];
+    unsigned int fat_offset = cluster * 4;
+    unsigned int fat_sector = fat_start + fat_offset / 512;
+    unsigned int fat_index  = fat_offset % 512;
+    disk_read_sector(fat_sector, sector_buf);
+    *(unsigned int*)(sector_buf + fat_index) = value & 0x0FFFFFFF;
+    disk_write_sector(fat_sector, sector_buf);
+}
+
+static unsigned int fat_alloc_cluster(void) {
+    unsigned char sector_buf[512];
+    // ищем свободный кластер (значение 0 в FAT)
+    for (unsigned int cluster = 2; cluster < 0xFFFFFF0; cluster++) {
+        unsigned int fat_offset = cluster * 4;
+        unsigned int fat_sector = fat_start + fat_offset / 512;
+        unsigned int fat_index  = fat_offset % 512;
+        disk_read_sector(fat_sector, sector_buf);
+        unsigned int val = *(unsigned int*)(sector_buf + fat_index) & 0x0FFFFFFF;
+        if (val == 0) {
+            fat_write(cluster, 0x0FFFFFFF); // отмечаем как конец цепочки
+            return cluster;
+        }
+    }
+    return 0; // нет свободных кластеров
+}
+
+int fat32_write(const char* path, unsigned char* buf, unsigned int size) {
+    if (!initialized) return 0;
+
+    // находим родительскую директорию и имя файла
+    char dir_path[128];
+    char filename[13];
+    int i = str_len(path) - 1;
+    while (i > 0 && path[i] != '/') i--;
+    
+    // копируем путь до папки
+    int j = 0;
+    while (j < i) { dir_path[j] = path[j]; j++; }
+    dir_path[j] = 0;
+    if (j == 0) { dir_path[0] = '/'; dir_path[1] = 0; }
+    
+    // копируем имя файла
+    j = 0;
+    i++;
+    while (path[i]) filename[j++] = path[i++];
+    filename[j] = 0;
+
+    // находим кластер директории
+    unsigned int dir_cluster = root_cluster;
+    if (dir_path[0] != '/' || dir_path[1] != 0) {
+        char part[64];
+        int pi = (dir_path[0] == '/') ? 1 : 0;
+        while (dir_path[pi]) {
+            j = 0;
+            while (dir_path[pi] && dir_path[pi] != '/') part[j++] = dir_path[pi++];
+            part[j] = 0;
+            if (j == 0) { if (dir_path[pi] == '/') pi++; continue; }
+            dir_cluster = find_in_dir(dir_cluster, part);
+            if (dir_cluster == 0) return 0;
+            if (dir_path[pi] == '/') pi++;
+        }
+    }
+
+    // выделяем кластеры для данных
+    unsigned int bytes_per_clus = boot.sectors_per_clus * 512;
+    unsigned int clusters_needed = (size + bytes_per_clus - 1) / bytes_per_clus;
+    
+    unsigned int first_cluster = fat_alloc_cluster();
+    if (first_cluster == 0) return 0;
+    
+    unsigned int cur_cluster = first_cluster;
+    unsigned int written = 0;
+    
+    for (unsigned int c = 0; c < clusters_needed; c++) {
+        unsigned int sector = cluster_to_sector(cur_cluster);
+        for (int s = 0; s < boot.sectors_per_clus; s++) {
+            unsigned char tmp[512];
+            for (int b = 0; b < 512; b++) {
+                tmp[b] = (written < size) ? buf[written++] : 0;
+            }
+            disk_write_sector(sector + s, tmp);
+        }
+        
+        if (c < clusters_needed - 1) {
+            unsigned int next = fat_alloc_cluster();
+            if (next == 0) return 0;
+            fat_write(cur_cluster, next);
+            cur_cluster = next;
+        }
+    }
+
+    // ищем свободную запись в директории
+    unsigned int cluster = dir_cluster;
+    while (!fat_is_end(cluster)) {
+        unsigned int sector = cluster_to_sector(cluster);
+        for (int s = 0; s < boot.sectors_per_clus; s++) {
+            unsigned char sec_buf[512];
+            disk_read_sector(sector + s, sec_buf);
+            for (int n = 0; n < 512 / 32; n++) {
+                Fat32DirEntry* e = (Fat32DirEntry*)(sec_buf + n * 32);
+                if (e->name[0] == 0x00 || e->name[0] == 0xE5) {
+                    // свободная запись — заполняем
+                    for (int b = 0; b < 8; b++) e->name[b] = ' ';
+                    for (int b = 0; b < 3; b++) e->ext[b]  = ' ';
+                    
+                    // копируем имя в 8.3 формат
+                    int ni = 0, ei = 0;
+                    int dot = 0;
+                    for (int fi = 0; filename[fi]; fi++) {
+                        char c = filename[fi];
+                        if (c >= 'a' && c <= 'z') c -= 32;
+                        if (c == '.') { dot = 1; continue; }
+                        if (!dot && ni < 8) e->name[ni++] = c;
+                        else if (dot && ei < 3) e->ext[ei++]  = c;
+                    }
+                    
+                    e->attributes  = 0x20; // архивный
+                    e->cluster_high = (first_cluster >> 16) & 0xFFFF;
+                    e->cluster_low  = first_cluster & 0xFFFF;
+                    e->file_size    = size;
+                    e->reserved     = 0;
+                    e->create_time_ms = 0;
+                    e->create_time  = 0;
+                    e->create_date  = 0;
+                    e->access_date  = 0;
+                    e->modify_time  = 0;
+                    e->modify_date  = 0;
+                    
+                    disk_write_sector(sector + s, sec_buf);
+                    return 1;
+                }
+            }
+        }
+        cluster = fat_next(cluster);
+    }
+    return 0;
+}

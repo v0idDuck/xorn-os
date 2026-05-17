@@ -56,6 +56,9 @@ static void __attribute__((sysv_abi)) _xe_halt(void) {
 static void __attribute__((sysv_abi)) _xe_exit(void) {
     // просто возвращаемся из loader_run
 }
+static int __attribute__((sysv_abi)) _xe_write(const char* path, void* buf, unsigned int size) {
+    return fat32_write(path, (unsigned char*)buf, size);
+}
 
 int loader_run(const char* path, void* api) {
     
@@ -77,7 +80,8 @@ int loader_run(const char* path, void* api) {
     api_struct.run = _xe_run;
     api_struct.blink_read = _xe_blink_read;
     api_struct.halt = _xe_halt;
-
+    api_struct.write = _xe_write;
+    
     unsigned char* file_buf  = 0;
     unsigned int   file_size = 0;
 
